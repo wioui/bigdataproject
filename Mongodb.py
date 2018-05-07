@@ -52,11 +52,15 @@ def data_to_mongo(db,dbsite,directory):
 
         for each in reader:
             row = {}
-            id = site_id_to_id(dbsite, str(filename.replace('.csv', '')))
             for field in header:
-                row[field] = each[field]
-            print(id["_id"])
-            row["SITE_ID"]=id["_id"]
+
+                if field=="value":
+                    row[field] = float(each[field])
+
+                else:
+                    row[field] = each[field]
+
+            row["SITE_ID"]=str(filename.replace('.csv', ''))
             db.insert(row)
 
 
@@ -66,4 +70,4 @@ def data_to_mongo(db,dbsite,directory):
 db=connexion()
 dbsite=connexion()
 remove(db)
-data_to_mongo(db,dbsite,"C:/bigdataproject/bigdataproject/csv/")
+data_to_mongo(db,dbsite,"C:/bigdataproject/csv/")
