@@ -80,10 +80,8 @@ def json_to_es(es,file,myindex,docname):
     print(file)
     f = open(file)
     content = f.readlines()
-    for i in content:
-        print("i",i)
-        es.index(index=myindex, ignore=400, doc_type=docname, body=json.loads(i))
-        es.indices.refresh(index=myindex)
+    es.index(index=myindex, ignore=400, doc_type=docname, body=json.loads(i))
+    es.indices.refresh(index=myindex)
 
 def data_to_es(es,directory,index_name,docname):
     print(datetime.datetime.now())
