@@ -1,7 +1,7 @@
 def ld_sum_range_date(db,date1,date2):
     # date format "2012-01-01 01:45:00"
     if date1 > date2:
-        date1,date2=date2,date1
+        date1,date2 = date2,date1 # date1 = date2 et date2 = date1 sans passer par une troisième variable
     pipeline ={ "$group": {"_id": "null", "count": { "$sum": "$value"}}};
     match = { "$match": {"dttm_utc": {"$lt": date2,"$gte": date1}}}
     proj = {"$project": {"_id": 0}}

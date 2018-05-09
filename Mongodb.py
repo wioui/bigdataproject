@@ -28,7 +28,7 @@ def all_sites_to_mongo(db):
     db = db.enernoc.all_sites
     csvfile = open('C:/bigdataproject/all_sites.csv', 'r')
     reader = csv.DictReader(csvfile)
-    db.drop()
+    #db.drop()
     header = ["SITE_ID", "INDUSTRY", "SUB_INDUSTRY", "SQ_FT", "LAT", "LNG", "TIME_ZONE", "TZ_OFFSET"]
 
     for each in reader:
@@ -61,7 +61,7 @@ def site_id_to_id(db,id):
 def data_to_mongo(db,directory):
     print(datetime.datetime.now())
     db=db.enernoc.all_datas
-    list_file=list_all_file(directory,csv)
+    list_file=list_all_file(directory,"csv")
     for i in range(len(list_file)):
         print(list_file[i])
         csvfile = open(list_file[i], 'r')
