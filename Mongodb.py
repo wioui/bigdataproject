@@ -28,7 +28,7 @@ def all_sites_to_mongo(db):
     db = db.enernoc.all_sites
     csvfile = open('C:/bigdataproject/all_sites.csv', 'r')
     reader = csv.DictReader(csvfile)
-    db.drop()
+    #db.drop()
     header = ["SITE_ID", "INDUSTRY", "SUB_INDUSTRY", "SQ_FT", "LAT", "LNG", "TIME_ZONE", "TZ_OFFSET"]
 
     for each in reader:
@@ -43,7 +43,8 @@ def all_sites_to_mongo(db):
                 row[field] = each[field]
                 L.append(each[field])
 
-            row[field] = each[field]
+            else:
+                row[field] = each[field]
         row["location"]=str(L[0]+", "+L[0])
         db.insert_one(row).inserted_id
 
@@ -58,10 +59,10 @@ def list_all_file(directory,type):
 def site_id_to_id(db,id):
     return db.find_one({"SITE_ID":id},{"_id":1})
 
-def data_to_mongo(db,directory):
+def data_to_mongo(db,directory,nb):
     print(datetime.datetime.now())
     db=db.enernoc.all_datas
-    list_file=list_all_file(directory,csv)
+    list_file=list_all_file(directory,"csv")
     for i in range(len(list_file)):
         print(list_file[i])
         csvfile = open(list_file[i], 'r')
@@ -71,19 +72,24 @@ def data_to_mongo(db,directory):
 
         for each in reader:
             row = {}
-            for field in header:
+            compte = 0
+            while nb > compte:
+                for field in header:
 
-                if field=="value":
-                    row[field] = float(each[field])
-                if field=="dttm_utc":
-                    d = datetime.datetime.strptime(each[field], "%Y-%m-%d %H:%M:%S")
-                    row[field] = d
+                    if field=="value":
+                        row[field] = float(each[field])
+                    if field=="dttm_utc":
+                        d = datetime.datetime.strptime(each[field], "%Y-%m-%d %H:%M:%S")
+                        row[field] = d
 
-                else:
-                    row[field] = each[field]
+                    else:
+                        row[field] = each[field]
 
-            row["SITE_ID"]=str(filename.replace('.csv', ''))
-            db.insert_one(row).inserted_id
+                row["SITE_ID"]=str(filename.replace('.csv', ''))
+                db.insert_one(row).inserted_id
+                print(row)
+                compte=compte+1
+                print(compte)
 
 
 
