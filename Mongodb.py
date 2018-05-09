@@ -36,16 +36,19 @@ def all_sites_to_mongo(db):
         L=[]
         for field in header:
             if field =="LAT":
-                row[field] = each[field]
+                d=float(each[field])
+                row[field] = d
                 L.append(each[field])
 
-            if field=="LNG":
-                row[field] = each[field]
+            elif field=="LNG":
+                d = float(each[field])
+                row[field] = d
                 L.append(each[field])
 
             else:
                 row[field] = each[field]
-        row["location"]=str(L[0]+", "+L[0])
+        d=str(L[0]+", "+L[0])
+        row["location"]=d
         db.insert_one(row).inserted_id
 
 
@@ -69,31 +72,59 @@ def data_to_mongo(db,directory,nb):
         reader = csv.DictReader(csvfile)
         filename = str(os.path.split(list_file[i])[1])
         header = ["timestamp", "dttm_utc", "value", "estimated", "anomaly"]
+        compte = 0
 
         for each in reader:
             row = {}
-            compte = 0
-            while nb > compte:
-                for field in header:
+            for field in header:
+                if field=="value":
+                    d= float(each[field])
+                    row[field] =d
+                elif field=="dttm_utc":
+                    d = datetime.datetime.strptime(each[field], "%Y-%m-%d %H:%M:%S")
+                    row[field] = d
 
-                    if field=="value":
-                        row[field] = float(each[field])
-                    if field=="dttm_utc":
-                        d = datetime.datetime.strptime(each[field], "%Y-%m-%d %H:%M:%S")
-                        row[field] = d
+                else:
+                    row[field] = each[field]
 
-                    else:
-                        row[field] = each[field]
+            compte=compte+1
+            if compte >=nb:
+                break
+            row["SITE_ID"]=str(filename.replace('.csv', ''))
+            db.insert_one(row).inserted_id
 
-                row["SITE_ID"]=str(filename.replace('.csv', ''))
-                db.insert_one(row).inserted_id
-                print(row)
-                compte=compte+1
-                print(compte)
+def datas_sites_to_mongo(db,directory,nb):
+    print(datetime.datetime.now())
+    db = db.enernoc.all_datas
+    list_file = list_all_file(directory, "csv")
+    for i in range(len(list_file)):
+        print(list_file[i])
+        csvfile = open(list_file[i], 'r')
+        reader = csv.DictReader(csvfile)
+        filename = str(os.path.split(list_file[i])[1])
+        header_datas = ["timestamp", "dttm_utc", "value", "estimated", "anomaly"]
+        header_sites = ["SITE_ID", "INDUSTRY", "SUB_INDUSTRY", "SQ_FT", "LAT", "LNG", "TIME_ZONE", "TZ_OFFSET"]
 
+        compte = 0
 
+        for each in reader:
+            row = {}
+            for field in header_datas:
+                if field == "value":
+                    d = float(each[field])
+                    row[field] = d
+                elif field == "dttm_utc":
+                    d = datetime.datetime.strptime(each[field], "%Y-%m-%d %H:%M:%S")
+                    row[field] = d
 
+                else:
+                    row[field] = each[field]
 
+            compte = compte + 1
+            if compte >= nb:
+                break
+            row["SITE_ID"] = str(filename.replace('.csv', ''))
+            db.insert_one(row).inserted_id
 
 
 

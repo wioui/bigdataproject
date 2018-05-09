@@ -8,10 +8,10 @@ import datetime
 import csv
 import json
 
-filename="10"
-file=str("C://bigdataproject//json//"+filename+"json")
-csvfile = open('all_sites.csv', 'r')
-jsonfile = open(file, 'w')
+a=662
+print(type(a))
+str(a)
+print(type(a))
 
 fieldnames = ("SITE_ID", "INDUSTRY", "SUB_INDUSTRY", "SQ_FT", "LAT", "LNG", "TIME_ZONE", "TZ_OFFSET")
 reader = csv.DictReader( csvfile, fieldnames)
