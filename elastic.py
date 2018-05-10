@@ -164,13 +164,12 @@ def all_datas_sites_to_es(es,db,directory,index_name, docname):
     for i in range(len(list_file)):
         print(list_file[i])
         data = pd.read_csv(list_file[i]).fillna('')
-        data_records = data.to_dict(orient='records')
-
         filename = os.path.split(list_file[i])[1].replace('.csv', "")
         site_id = str(filename)
         site_add = Mongodb.site_id_to_id(dbsite, site_id)
         a = [site_add] * len(data)
         data['SITE'] = a
+        data_records = data.to_dict(orient='records')
 
         if not es.indices.exists(index_name):
             es.indices.create(index_name)
