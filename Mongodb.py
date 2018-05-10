@@ -22,6 +22,10 @@ def remove_all_sites(db):
     print(datetime.datetime.now())
     db.enernoc.all_sites.remove()
 
+def remove_all_datas_sites(db):
+    print(datetime.datetime.now())
+    db.enernoc.all_datas_sites.remove()
+
 
 def all_sites_to_mongo(db):
     print(datetime.datetime.now())
@@ -60,7 +64,7 @@ def list_all_file(directory,type):
 
 
 def site_id_to_id(db,id):
-    return db.find_one({"SITE_ID":id},{"_id":1})
+    return db.find_one({"SITE_ID":id},{"_id":0})
 
 def data_to_mongo(db,directory,nb):
     print(datetime.datetime.now())
@@ -90,20 +94,24 @@ def data_to_mongo(db,directory,nb):
             compte=compte+1
             if compte >=nb:
                 break
+
             row["SITE_ID"]=str(filename.replace('.csv', ''))
             db.insert_one(row).inserted_id
 
 def datas_sites_to_mongo(db,directory,nb):
     print(datetime.datetime.now())
-    db = db.enernoc.all_datas
+    dbdatas = db.enernoc.all_datas_sites
+    dbsite=db.enernoc.all_sites
     list_file = list_all_file(directory, "csv")
     for i in range(len(list_file)):
         print(list_file[i])
         csvfile = open(list_file[i], 'r')
         reader = csv.DictReader(csvfile)
-        filename = str(os.path.split(list_file[i])[1])
+        filename = os.path.split(list_file[i])[1].replace('.csv',"")
+        site_id=str(filename)
+        site_add=site_id_to_id(dbsite,site_id)
+
         header_datas = ["timestamp", "dttm_utc", "value", "estimated", "anomaly"]
-        header_sites = ["SITE_ID", "INDUSTRY", "SUB_INDUSTRY", "SQ_FT", "LAT", "LNG", "TIME_ZONE", "TZ_OFFSET"]
 
         compte = 0
 
@@ -123,8 +131,8 @@ def datas_sites_to_mongo(db,directory,nb):
             compte = compte + 1
             if compte >= nb:
                 break
-            row["SITE_ID"] = str(filename.replace('.csv', ''))
-            db.insert_one(row).inserted_id
+            row["SITE"]=site_add
+            dbdatas.insert_one(row).inserted_id
 
 
 

@@ -1,12 +1,14 @@
 import csv
 import os
-import elasticsearch as elas
 import datetime
 import json
-
+import glob
+import requests
+import elasticsearch as elas
 from bson import json_util
-from elasticsearch.helpers import bulk
 import Mongodb
+from elasticsearch.helpers import bulk
+import time
 
 
 def connexion():
@@ -76,12 +78,15 @@ def all_sites_to_json(db):
 
 
 
-def json_to_es(es,file,myindex,docname):
-    print(file)
-    f = open(file)
-    content = f.readlines()
-    es.index(index=myindex, ignore=400, doc_type=docname, body=json.loads(content))
-    es.indices.refresh(index=myindex)
+def json_to_es():
+    # print(file)
+    # f = open(file)
+    # content = f.readlines()
+    # es.index(index=myindex, ignore=400, doc_type=docname, body=json.loads(content))
+    # es.indices.refresh(index=myindex)
+    data = open('all.json').read()
+    requests.put('http://localhsot:9200/_bulk', data=data, verify=False)
+
 
 
 def csv_to_es(es,file,myindex,docname):
@@ -145,6 +150,63 @@ def all_datas_to_es(es,directory,index_name, docname,nb):
                 break
 
             row["SITE_ID"]=str(filename.replace('.csv', ''))
+            print(compte)
             es.index(index=index_name, doc_type=docname, body=row)
     es.indices.refresh(index=index_name)
+
+
+def all_datas_sites_to_es(es,db,directory,index_name, docname,nb=100):
+    print(datetime.datetime.now())
+    dbsite=db.enernoc.all_sites
+    list_file = Mongodb.list_all_file(directory, "csv")
+    for i in range(len(list_file)):
+        print(list_file[i])
+        csvfile = open(list_file[i], 'r')
+        reader = csv.DictReader(csvfile)
+        filename = os.path.split(list_file[i])[1].replace('.csv',"")
+        site_id=str(filename)
+        site_add=Mongodb.site_id_to_id(dbsite,site_id)
+
+        header_datas = ["timestamp", "dttm_utc", "value", "estimated", "anomaly"]
+
+        compte = 0
+
+        for each in reader:
+            row = {}
+            elasbulk={}
+            final=[]
+            for field in header_datas:
+                if field == "value":
+                    d = float(each[field])
+                    row[field] = d
+                elif field == "dttm_utc":
+                    d = datetime.datetime.strptime(each[field], "%Y-%m-%d %H:%M:%S")
+                    row[field] = d
+
+                else:
+                    row[field] = each[field]
+
+            compte = compte + 1
+            if compte >= nb:
+                break
+
+
+            row["SITE"] = site_add
+            elasbulk["_index"] = index_name
+            elasbulk["_type"] = docname
+            elasbulk["_id"]=compte
+            elasbulk["_source"]=row
+            final.append(elasbulk)
+
+
+            bulk(es, final, index=index_name, doc_type=docname, refresh=False)
+    es.indices.refresh(index=index_name)
+
+
+
+
+
+
+
+
 
