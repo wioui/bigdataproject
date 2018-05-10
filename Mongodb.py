@@ -5,6 +5,7 @@ import csv
 import datetime
 import glob
 import os
+import pandas as pd
 
 
 def connexion():
@@ -98,41 +99,21 @@ def data_to_mongo(db,directory,nb):
             row["SITE_ID"]=str(filename.replace('.csv', ''))
             db.insert_one(row).inserted_id
 
-def datas_sites_to_mongo(db,directory,nb):
+def datas_sites_to_mongo(db,directory):
     print(datetime.datetime.now())
     dbdatas = db.enernoc.all_datas_sites
     dbsite=db.enernoc.all_sites
     list_file = list_all_file(directory, "csv")
     for i in range(len(list_file)):
         print(list_file[i])
-        csvfile = open(list_file[i], 'r')
-        reader = csv.DictReader(csvfile)
+        data = pd.read_csv(list_file[i])
         filename = os.path.split(list_file[i])[1].replace('.csv',"")
         site_id=str(filename)
         site_add=site_id_to_id(dbsite,site_id)
-
-        header_datas = ["timestamp", "dttm_utc", "value", "estimated", "anomaly"]
-
-        compte = 0
-
-        for each in reader:
-            row = {}
-            for field in header_datas:
-                if field == "value":
-                    d = float(each[field])
-                    row[field] = d
-                elif field == "dttm_utc":
-                    d = datetime.datetime.strptime(each[field], "%Y-%m-%d %H:%M:%S")
-                    row[field] = d
-
-                else:
-                    row[field] = each[field]
-
-            compte = compte + 1
-            if compte >= nb:
-                break
-            row["SITE"]=site_add
-            dbdatas.insert_one(row).inserted_id
+        a = [site_add] * len(data)
+        data['SITE'] = a
+        data_json = json.loads(data.to_json(orient='records'))
+        dbdatas.insert(data_json)
 
 
 

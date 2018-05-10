@@ -9,6 +9,7 @@ from bson import json_util
 import Mongodb
 from elasticsearch.helpers import bulk
 import time
+import pandas as pd
 
 
 def connexion():
@@ -155,58 +156,32 @@ def all_datas_to_es(es,directory,index_name, docname,nb):
     es.indices.refresh(index=index_name)
 
 
-def all_datas_sites_to_es(es,db,directory,index_name, docname,nb=100):
+def all_datas_sites_to_es(es,db,directory,index_name, docname):
     print(datetime.datetime.now())
-    dbsite=db.enernoc.all_sites
+    dbsite = db.enernoc.all_sites
     list_file = Mongodb.list_all_file(directory, "csv")
+    actions = []
     for i in range(len(list_file)):
         print(list_file[i])
-        csvfile = open(list_file[i], 'r')
-        reader = csv.DictReader(csvfile)
-        filename = os.path.split(list_file[i])[1].replace('.csv',"")
-        site_id=str(filename)
-        site_add=Mongodb.site_id_to_id(dbsite,site_id)
+        data = pd.read_csv(list_file[i]).fillna('')
+        data_records = data.to_dict(orient='records')
 
-        header_datas = ["timestamp", "dttm_utc", "value", "estimated", "anomaly"]
+        filename = os.path.split(list_file[i])[1].replace('.csv', "")
+        site_id = str(filename)
+        site_add = Mongodb.site_id_to_id(dbsite, site_id)
+        a = [site_add] * len(data)
+        data['SITE'] = a
 
-        compte = 0
+        if not es.indices.exists(index_name):
+            es.indices.create(index_name)
+        for i, r in enumerate(data_records):
+            actions.append({"_index": index_name,
+                            "_type": docname,
+                            "_source": r})
+            i += 1
 
-        for each in reader:
-            row = {}
-            elasbulk={}
-            final=[]
-            for field in header_datas:
-                if field == "value":
-                    d = float(each[field])
-                    row[field] = d
-                elif field == "dttm_utc":
-                    d = datetime.datetime.strptime(each[field], "%Y-%m-%d %H:%M:%S")
-                    row[field] = d
-
-                else:
-                    row[field] = each[field]
-
-            compte = compte + 1
-            if compte >= nb:
-                break
-
-
-            row["SITE"] = site_add
-            elasbulk["_index"] = index_name
-            elasbulk["_type"] = docname
-            elasbulk["_id"]=compte
-            elasbulk["_source"]=row
-            final.append(elasbulk)
-
-
-            bulk(es, final, index=index_name, doc_type=docname, refresh=False)
+        bulk(es, actions=actions, index=index_name, doc_type=docname, refresh=False)
     es.indices.refresh(index=index_name)
-
-
-
-
-
-
 
 
 
