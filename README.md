@@ -30,7 +30,7 @@ Configurer les repetoires directory_all_sites et directory_all_datas dans main.p
 
 ## Contenu des fichiers
 
-Mongodb.py: import et fonctions dans Mongo
-elastic.py: import et fonctions dans Elasticsearch
-neo.py: import et fonctions dans Neo4J
-request.py: requetes demandées pour le project en MongoDB
+* Mongodb.py: import et fonctions dans Mongo
+* elastic.py: import et fonctions dans Elasticsearch
+* neo.py: import et fonctions dans Neo4J
+* request.py: requetes demandées pour le project en MongoDB

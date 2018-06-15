@@ -104,6 +104,7 @@
       <find>pipeline</find>
       <find>location</find>
       <find>directory</find>
+      <find>import</find>
     </findStrings>
     <replaceStrings>
       <replace>enernoc</replace>
