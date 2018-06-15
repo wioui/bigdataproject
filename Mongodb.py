@@ -7,7 +7,7 @@ import glob
 import os
 import pandas as pd
 
-
+## connexion à la base MONGODB
 def connexion():
     try:
         print(datetime.datetime.now())
@@ -15,105 +15,58 @@ def connexion():
     except:
         print("error connexion")
 
-def remove_all_datas(db):
-    print(datetime.datetime.now())
-    db.enernoc.all_datas.remove()
-
+##DELETE la base all sites
 def remove_all_sites(db):
     print(datetime.datetime.now())
     db.enernoc.all_sites.remove()
 
+
+##DELETE la base all_datas_sites
 def remove_all_datas_sites(db):
     print(datetime.datetime.now())
     db.enernoc.all_datas_sites.remove()
 
-
-def all_sites_to_mongo(db):
+## Import ALL sites dans MONGODB
+def all_sites_to_mongo(db,directory):
+## mettre dans la variable direcoty votre repertoire ou se trouve all_sites.csv
     print(datetime.datetime.now())
     db = db.enernoc.all_sites
-    csvfile = open('C:/bigdataproject/all_sites.csv', 'r')
-    reader = csv.DictReader(csvfile)
-    #db.drop()
-    header = ["SITE_ID", "INDUSTRY", "SUB_INDUSTRY", "SQ_FT", "LAT", "LNG", "TIME_ZONE", "TZ_OFFSET"]
+    csvfile = directory+"all_sites.csv"
+    data = pd.read_csv(csvfile)
+    data_json = json.loads(data.to_json(orient='records'))
+    db.insert(data_json)
 
-    for each in reader:
-        row = {}
-        L=[]
-        for field in header:
-            if field =="LAT":
-                d=float(each[field])
-                row[field] = d
-                L.append(each[field])
-
-            elif field=="LNG":
-                d = float(each[field])
-                row[field] = d
-                L.append(each[field])
-
-            else:
-                row[field] = each[field]
-        d=str(L[0]+", "+L[0])
-        row["location"]=d
-        db.insert_one(row).inserted_id
-
-
+## liste tous les fichier d'un répertoire
 def list_all_file(directory,type):
     if type=="csv":
         return glob.glob(directory + "*.csv")
     elif type=="json":
         return glob.glob(directory + "*.json")
 
-
+## requete le site dans datas_sites suivant le nom du fichier
 def site_id_to_id(db,id):
     return db.find_one({"SITE_ID":id},{"_id":0})
 
-def data_to_mongo(db,directory,nb):
-    print(datetime.datetime.now())
-    db=db.enernoc.all_datas
-    list_file=list_all_file(directory,"csv")
-    for i in range(len(list_file)):
-        print(list_file[i])
-        csvfile = open(list_file[i], 'r')
-        reader = csv.DictReader(csvfile)
-        filename = str(os.path.split(list_file[i])[1])
-        header = ["timestamp", "dttm_utc", "value", "estimated", "anomaly"]
-        compte = 0
 
-        for each in reader:
-            row = {}
-            for field in header:
-                if field=="value":
-                    d= float(each[field])
-                    row[field] =d
-                elif field=="dttm_utc":
-                    d = datetime.datetime.strptime(each[field], "%Y-%m-%d %H:%M:%S")
-                    row[field] = d
 
-                else:
-                    row[field] = each[field]
-
-            compte=compte+1
-            if compte >=nb:
-                break
-
-            row["SITE_ID"]=str(filename.replace('.csv', ''))
-            db.insert_one(row).inserted_id
-
+### fonction qui incorpore toutes les données dans la base
 def datas_sites_to_mongo(db,directory):
     print(datetime.datetime.now())
-    dbdatas = db.enernoc.all_datas_sites
-    dbsite=db.enernoc.all_sites
-    list_file = list_all_file(directory, "csv")
+    dbdatas = db.enernoc.all_datas_sites #connexion a la base all_datas_sites
+    dbsite=db.enernoc.all_sites #connexion a la base all_sites
+    list_file = list_all_file(directory, "csv") #la liste de tous les fichiers csv à incorporer dans la base
     for i in range(len(list_file)):
         print(list_file[i])
-        data = pd.read_csv(list_file[i])
+        data = pd.read_csv(list_file[i]) #lecture du csv
         filename = os.path.split(list_file[i])[1].replace('.csv',"")
         site_id=str(filename)
-        site_add=site_id_to_id(dbsite,site_id)
+        site_add=site_id_to_id(dbsite,site_id) # informations du site selon nom du fichier
         a = [site_add] * len(data)
+
+        pd.to_datetime(data['dttm_utc'],format="%Y-%m-%d %H:%M:%S") # mise au format date
         data['SITE'] = a
-        data_json = json.loads(data.to_json(orient='records'))
-        dbdatas.insert(data_json)
+        data_json = json.loads(data.to_json(orient='records')) # conversion csv - json
+        dbdatas.insert(data_json) # insertion dans la base
 
 
 

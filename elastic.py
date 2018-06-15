@@ -11,7 +11,7 @@ from elasticsearch.helpers import bulk
 import time
 import pandas as pd
 
-
+## connexion to elasticsearch
 def connexion():
     print(datetime.datetime.now())
     return elas.Elasticsearch([{'host': 'localhost', 'port': 9200}])
@@ -20,9 +20,11 @@ def create_index(es,index_name):
     print(datetime.datetime.now())
     if not es.indices.exists(index=index_name):
         es.indices.create(index=index_name)
+
 def delete_index(es,index_name):
     es.indices.delete(index=index_name, ignore=[400, 404])
 
+##conversion csv to json
 def csv_to_json(csvf,jsonf,fieldnames):
     csvfile = open(csvf, 'r')
     jsonfile = open(jsonf, 'w')
@@ -34,70 +36,11 @@ def csv_to_json(csvf,jsonf,fieldnames):
             jsonfile.write('\n')
         n=True
 
-def all_json_to_es(es,directory,myindex,docname):
+
+## import all_sites to elasticsearch
+def all_sites_to_es(es, index_name, docname,directory):
     print(datetime.datetime.now())
-    list_file = Mongodb.list_all_file(directory,"json")
-
-    for i in range(len(list_file)):
-        json_to_es(es,list_file[i],myindex,docname)
-
-
-# def all_sites_to_es(es,db,index_name,docname):
-#     print(datetime.datetime.now())
-#     content=db.enernoc.all_sites.find({},{"_id":0})
-#     result=json_util.dumps(content)
-#     print(result)
-#
-#     actions = [{
-#         "_index": index_name,
-#         "_type": docname,
-#         "_source": {content,
-#                     }}
-#     ]
-#
-#     bulk(es, actions)
-#
-#     es.index(index=index_name, doc_type=docname, body={content})
-#     es.indices.refresh(index=index_name)
-#     return ('', 204)
-
-def all_datas_to_json(directory):
-    print(datetime.datetime.now())
-    list_file = Mongodb.list_all_file(directory,'csv')
-    fieldnames = ("timestamp", "dttm_utc", "value", "estimated", "anomaly")
-
-    for i in range(len(list_file)):
-        filename = str(os.path.split(list_file[i])[1]).replace('csv','')
-        file="C:/bigdataproject/json/"+filename+"json"
-        print(file)
-        csv_to_json(list_file[i],file , fieldnames)
-
-def all_sites_to_json(db):
-    print(datetime.datetime.now())
-    content=db.enernoc.all_sites.find_one({},{"_id":0})
-    json.dump(json_util.dumps(content), open("all_sites.json", "w"))
-
-
-
-def json_to_es():
-    # print(file)
-    # f = open(file)
-    # content = f.readlines()
-    # es.index(index=myindex, ignore=400, doc_type=docname, body=json.loads(content))
-    # es.indices.refresh(index=myindex)
-    data = open('all.json').read()
-    requests.put('http://localhsot:9200/_bulk', data=data, verify=False)
-
-
-
-def csv_to_es(es,file,myindex,docname):
-    f=open(file)
-    reader = csv.DictReader(f)
-    elas.helpers.bulk(es, reader, index=myindex, doc_type=docname)
-
-def all_sites_to_es(es, index_name, docname):
-    print(datetime.datetime.now())
-    csvfile = open('C:/bigdataproject/all_sites.csv', 'r')
+    csvfile = open(directory+'all_sites.csv', 'r')
     reader = csv.DictReader(csvfile)
     header = ["SITE_ID", "INDUSTRY", "SUB_INDUSTRY", "SQ_FT", "LAT", "LNG", "TIME_ZONE", "TZ_OFFSET"]
 
@@ -105,82 +48,47 @@ def all_sites_to_es(es, index_name, docname):
         row = {}
         L=[]
         for field in header:
-            if field == "LAT":
-                d=float(each[field])
-                row[field] = d
-                L.append(each[field])
 
-            elif field == "LNG":
-                d=float(each[field])
-                row[field] = d
-                L.append(each[field])
-            else:
-                row[field] = each[field]
-        location=str(L[0]+", "+L[0])
-        row["location"] = location
+            row[field] = each[field]
 
         es.index(index=index_name, doc_type=docname, body=row)
         es.indices.refresh(index=index_name)
 
-def all_datas_to_es(es,directory,index_name, docname,nb):
-    print(datetime.datetime.now())
-    list_file=Mongodb.list_all_file(directory,'csv')
-    for i in range(len(list_file)):
-        print(list_file[i])
-        csvfile = open(list_file[i], 'r')
-        reader = csv.DictReader(csvfile)
-        filename = str(os.path.split(list_file[i])[1])
-        header = ["timestamp", "dttm_utc", "value", "estimated", "anomaly"]
-        compte=0
-        for each in reader:
-            row = {}
-            for field in header:
 
-                if field=="value":
-                    d = float(each[field])
-                    row[field] = d
-                elif field=="dttm_utc":
-                    d = datetime.datetime.strptime(each[field], "%Y-%m-%d %H:%M:%S")
-                    row[field] = d
-
-                else:
-                    row[field] = each[field]
-
-            compte = compte + 1
-            if compte >= nb:
-                break
-
-            row["SITE_ID"]=str(filename.replace('.csv', ''))
-            print(compte)
-            es.index(index=index_name, doc_type=docname, body=row)
-    es.indices.refresh(index=index_name)
-
-
-def all_datas_sites_to_es(es,db,directory,index_name, docname):
+## import all_datas_sites to elasticsearch
+def all_datas_sites_to_esv2(es,db,directory,index_name, docname):
     print(datetime.datetime.now())
     dbsite = db.enernoc.all_sites
     list_file = Mongodb.list_all_file(directory, "csv")
     actions = []
     for i in range(len(list_file)):
         print(list_file[i])
-        data = pd.read_csv(list_file[i]).fillna('')
+        data = pd.read_csv(list_file[i]).fillna('') ##lecture du csv
         filename = os.path.split(list_file[i])[1].replace('.csv', "")
         site_id = str(filename)
         site_add = Mongodb.site_id_to_id(dbsite, site_id)
         a = [site_add] * len(data)
         data['SITE'] = a
-        data_records = data.to_dict(orient='records')
+        geopoint=(str(data['SITE'][0]['LAT'])+", "+str(data['SITE'][0]['LNG'])) ## concatenation lat + lng pour mapping Kibana
+        data['geo_point']=geopoint
+        data['date'] = pd.to_datetime(data['timestamp'], unit='s')
+
+        data_records = data.to_dict(orient='records') ##conversion pour format elasticsearch (dict)
 
         if not es.indices.exists(index_name):
             es.indices.create(index_name)
+
+        print("Début import Elastic")
         for i, r in enumerate(data_records):
             actions.append({"_index": index_name,
                             "_type": docname,
                             "_source": r})
-            i += 1
 
-        bulk(es, actions=actions, index=index_name, doc_type=docname, refresh=False)
+
+        bulk(es, actions=actions, index=index_name, doc_type=docname, refresh=False) ## import dans elasticsearch via bulk
     es.indices.refresh(index=index_name)
 
+    #     helpers.parallel_bulk(client=es, actions=actions, thread_count=4, refresh=False)
+    # es.indices.refresh(index=index_name)
 
 
