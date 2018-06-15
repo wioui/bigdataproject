@@ -1,13 +1,13 @@
 # bigdataproject
 
-##Pré requis
+## Pré requis
 
 * Python 3.6,
 * MongoDB 3.6,
 * Elasticsearch 6.2.4,
 * Neo4J
 
-##Installation des librairies:
+## Installation des librairies:
 
 *  elasticsearch
 *  pymongo
@@ -21,7 +21,7 @@
 
 via cmd "pip install librairie_name"
 
-##Lancement du code
+## Lancement du code
 
 ### Configuration dans main.py:
 
